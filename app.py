@@ -1,7 +1,15 @@
+import os
 import streamlit as st
 from story_generator import generate_story
 from genres import GENRES
 from utils import save_story_to_file
+
+# Directory where saved stories are stored
+SAVED_STORIES_DIR = "saved_stories"
+
+# Ensure saved stories directory exists
+if not os.path.exists(SAVED_STORIES_DIR):
+    os.makedirs(SAVED_STORIES_DIR)
 
 # Custom CSS styling for cyberpunk glass look
 st.markdown(
@@ -115,8 +123,9 @@ st.markdown(
 # Main container start
 st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
-st.title("🧙 AI Dungeon Story Generator (Ollama)")
+st.title("🧙 AI Dungeon Story Generator")
 
+# Select genre, prompt, and number of samples
 genre = st.selectbox("Select Genre", list(GENRES.keys()))
 prompt = st.text_area("Enter your story prompt:", height=120)
 num_samples = st.slider("Number of story continuations:", 1, 3, 1)
@@ -124,6 +133,7 @@ num_samples = st.slider("Number of story continuations:", 1, 3, 1)
 if "stories" not in st.session_state:
     st.session_state.stories = []
 
+# Generate story button logic
 if st.button("Generate Story"):
     if not prompt.strip():
         st.warning("Please enter a prompt!")
@@ -132,6 +142,7 @@ if st.button("Generate Story"):
             stories = generate_story(prompt, genre, num_samples)
             st.session_state.stories = stories
 
+# Display generated stories
 if st.session_state.stories:
     for i, story in enumerate(st.session_state.stories):
         st.subheader(f"Story {i + 1}")
@@ -141,6 +152,25 @@ if st.session_state.stories:
             filename = save_story_to_file(story, genre=genre)
             st.success(f"Story {i + 1} saved to {filename}")
             st.markdown(f"[📥 Download your story]({filename})", unsafe_allow_html=True)
+
+# Checkbox to show saved stories
+show_saved = st.checkbox("Show Saved Stories")
+
+if show_saved:
+    st.subheader("📂 Saved Stories")
+    saved_files = sorted(os.listdir(SAVED_STORIES_DIR))
+    if saved_files:
+        for fname in saved_files:
+            filepath = os.path.join(SAVED_STORIES_DIR, fname)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                st.markdown(f"### {fname}")
+                st.markdown(f'<div class="story-text">{content}</div>', unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Error reading {fname}: {e}")
+    else:
+        st.info("No saved stories found.")
 
 # Main container end
 st.markdown('</div>', unsafe_allow_html=True)
